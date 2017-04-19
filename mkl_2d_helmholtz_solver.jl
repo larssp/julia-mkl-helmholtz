@@ -2,7 +2,7 @@
 MKL_INT = Int32;
 
 # the commit routine returns an opaque pointer "xhandle" of type "DFTI_DESCRIPTOR_HANDLE".
-# create a type definition for the type declaration in the ccall.
+# create a type definition for the type declaration in the ccall as described here: http://bit.ly/2pge11J
 type DFTI_DESCRIPTOR_HANDLE
 end
 
@@ -36,9 +36,9 @@ function d_init_helmholtz_2d(ax::Float64,
     
     # Everything is passed by reference, because otherwise it throws
     # invalid memory access exceptions or returns wrong results. 
-    # The shared library seems to be written in fortran.
+    # The shared library seems to be written in fortran and not C.
     ccall((:D_INIT_HELMHOLTZ_2D, "mkl_rt"),  # function and library
-        Ptr{Void},              # ReturnType Void --> no return value
+        Ptr{Void},      # ReturnType Void --> no return value
         (Ref{Float64},  #ax
         Ref{Float64},   #bx
         Ref{Float64},   #ay      
@@ -106,7 +106,7 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
         bd_bx,
         bd_ay,
         bd_by,
-        xhandleref,
+        xhandle,
         ipar,
         dpar,
         stat,
