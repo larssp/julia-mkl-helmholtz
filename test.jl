@@ -25,6 +25,9 @@ include("mkl_2d_helmholtz_solver.jl")
 # INIT CALL
 (ipar, dpar)            = d_init_helmholtz_2d(ax,bx,ay,by,Int32(nx),Int32(ny),BCtype,q);
 
+# no problem with the garbace collector at this point
+gc()
+
 # COMMIT CALL
 (ipar,dpar,f,xhandle)   = d_commit_helmholtz_2d(f,bd_ax,bd_bx,bd_ay,bd_by,ipar,dpar);
 
