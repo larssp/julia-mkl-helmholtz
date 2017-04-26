@@ -2,9 +2,15 @@
 MKL_INT = Int32;
 
 # the commit routine returns an opaque pointer "xhandle" of type "DFTI_DESCRIPTOR_HANDLE".
-# create a type definition for the type declaration in the ccall as described here: http://bit.ly/2pge11J
-type DFTI_DESCRIPTOR_HANDLE
-end
+# create a type definition for the type declaration in the ccall
+
+# this does not work
+#type DFTI_DESCRIPTOR_HANDLE
+#end
+
+# but this does, according to http://bit.ly/2ouOx0J
+const DFTI_DESCRIPTOR_HANDLE = Int64
+#const DFTI_DESCRIPTOR_HANDLE = Int32
 
 function d_init_helmholtz_2d(ax::Float64, 
                              bx::Float64,
@@ -87,7 +93,7 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
                                dpar::Array{Float64})
 
     stat       = Ref{MKL_INT}(0);
-    xhandle    = DFTI_DESCRIPTOR_HANDLE();
+    rxhandle    = Ref{DFTI_DESCRIPTOR_HANDLE}(0);
     
     ccall((:D_COMMIT_HELMHOLTZ_2D, "mkl_rt"),
         Ptr{Void},                      # ReturnType Void --> no return value
@@ -106,7 +112,7 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
         bd_bx,
         bd_ay,
         bd_by,
-        xhandle,
+        rxhandle,
         ipar,
         dpar,
         stat,
@@ -128,6 +134,7 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
         end
     end
 
+    xhandle = rxhandle[];
     return (ipar,dpar,f,xhandle);
 end
 
