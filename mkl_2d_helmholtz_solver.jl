@@ -4,10 +4,6 @@ MKL_INT = Int32;
 # the commit routine returns an opaque pointer "xhandle" of type "DFTI_DESCRIPTOR_HANDLE".
 # create a type definition for the type declaration in the ccall
 
-# this does not work
-#type DFTI_DESCRIPTOR_HANDLE
-#end
-
 # but this does, according to http://bit.ly/2ouOx0J
 const DFTI_DESCRIPTOR_HANDLE = Int64
 #const DFTI_DESCRIPTOR_HANDLE = Int32
@@ -22,7 +18,7 @@ function d_init_helmholtz_2d(ax::Float64,
                              q::Float64)
     
     # convert from type "String" to a UInt8 Array
-    in_BCtype    = Array{UInt8}(4);
+    in_BCtype    = Array{UInt8}(undef, 4);
     in_BCtype[1] = UInt8(BCtype[1]);
     in_BCtype[2] = UInt8(BCtype[2]);
     in_BCtype[3] = UInt8(BCtype[3]);
@@ -35,16 +31,16 @@ function d_init_helmholtz_2d(ax::Float64,
     
     # init integer array "ipar" and float array "dpar", which are used by 
     # subsequent routines and therefor returned by this function.
-    ipar         = Array{MKL_INT}(128);
-    ipar[:]      = 0;
-    dpar         = Array{Float64}(Int32(5*nx/2+7));
-    dpar[:]      = 0.0;
+    ipar         = Array{MKL_INT}(undef, 128);
+    ipar[:]     .= 0;
+    dpar         = Array{Float64}(undef, Int32(5*nx/2+7));
+    dpar[:]     .= 0.0;
     
     # Everything is passed by reference, because otherwise it throws
     # invalid memory access exceptions or returns wrong results. 
     # The shared library seems to be written in fortran and not C.
     ccall((:D_INIT_HELMHOLTZ_2D, "mkl_rt"),  # function and library
-        Ptr{Void},      # ReturnType Void --> no return value
+        Ptr{Cvoid},      # ReturnType Void --> no return value
         (Ref{Float64},  #ax
         Ref{Float64},   #bx
         Ref{Float64},   #ay      
@@ -93,10 +89,10 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
                                dpar::Array{Float64})
 
     stat       = Ref{MKL_INT}(0);
-    rxhandle    = Ref{DFTI_DESCRIPTOR_HANDLE}(0);
+    xhandle    = Ref{DFTI_DESCRIPTOR_HANDLE}(0);
     
     ccall((:D_COMMIT_HELMHOLTZ_2D, "mkl_rt"),
-        Ptr{Void},                      # ReturnType Void --> no return value
+        Ptr{Cvoid},                      # ReturnType Void --> no return value
         (Ref{Cdouble},                  #f
         Ref{Float64},                   #bd_ax
         Ref{Float64},                   #bd_bx
@@ -112,7 +108,7 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
         bd_bx,
         bd_ay,
         bd_by,
-        rxhandle,
+        xhandle,
         ipar,
         dpar,
         stat,
@@ -134,7 +130,6 @@ function d_commit_helmholtz_2d(f::Array{Cdouble},
         end
     end
 
-    xhandle = rxhandle[];
     return (ipar,dpar,f,xhandle);
 end
 
@@ -144,14 +139,14 @@ function d_helmholtz_2d(f::Array{Cdouble},
                         bd_bx::Array{Float64},
                         bd_ay::Array{Float64},
                         bd_by::Array{Float64},
-                        xhandle::DFTI_DESCRIPTOR_HANDLE,
+                        xhandle::Base.RefValue{DFTI_DESCRIPTOR_HANDLE},
                         ipar::Array{MKL_INT},
                         dpar::Array{Float64})
     
     stat = Ref{MKL_INT}(0);
     
     ccall((:D_HELMHOLTZ_2D, "mkl_rt"),
-        Ptr{Void},                      # ReturnType Void --> no return value
+        Ptr{Cvoid},                      # ReturnType Void --> no return value
         (Ref{Cdouble},                  #f
         Ref{Float64},                   #bd_ax
         Ref{Float64},                   #bd_bx
@@ -196,12 +191,13 @@ function d_helmholtz_2d(f::Array{Cdouble},
     return (ipar,f,xhandle);
 end
 
-function free_helmholtz_2d(xhandle::DFTI_DESCRIPTOR_HANDLE,ipar::Array{MKL_INT})
+function free_helmholtz_2d(xhandle::Base.RefValue{DFTI_DESCRIPTOR_HANDLE},
+						   ipar::Array{MKL_INT})
     
     stat = Ref{MKL_INT}(0);
     
     ccall((:FREE_HELMHOLTZ_2D, "mkl_rt"),
-        Ptr{Void},                      # ReturnType Void --> no return value
+        Ptr{Cvoid},                      # ReturnType Void --> no return value
         (Ref{DFTI_DESCRIPTOR_HANDLE},   #xhandle
         Ref{MKL_INT},                   #ipar
         Ref{MKL_INT},                   #stat
